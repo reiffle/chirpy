@@ -9,10 +9,12 @@ import (
 func main() {
 mux := http.NewServeMux()
 
-s:=&http.Server{
+s := &http.Server{
 Addr: ":8080",
 Handler: mux,
 }
+
+mux.Handle("/", http.FileServer(http.Dir(".")))
 
 err := s.ListenAndServe()
 if err!=nil{
