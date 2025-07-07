@@ -6,14 +6,16 @@ import (
 	"net/http"
 	"os"
 	"sync/atomic"
+	"workspace/github.com/reiffle/chirpy/v2/internal/database"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"github.com/reiffle/chirpy/internal/database"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	DB             *database.Queries
+	platform       string
 }
 
 func main() {
@@ -23,13 +25,20 @@ func main() {
 	}
 
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
+
 	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Error opening URL")
+	}
 	dbQueries := database.New(db)
 	const filepathRoot = "."
 	const port = "8080"
 
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
+		DB:             dbQueries,
+		platform:       platform,
 	}
 
 	mux := http.NewServeMux()
@@ -41,6 +50,7 @@ func main() {
 
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
