@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,31 +12,26 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
 		return
 	}
-	type returnVals struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Body      string    `json:"body"`
-		UserID    uuid.UUID `json:"user_id"`
-	}
+
 	var cleanedChirps []returnVals
 	for _, item := range payload {
-		cleanedChirp := returnVals{
-			ID:        item.ID,
-			CreatedAt: item.CreatedAt,
-			UpdatedAt: item.UpdatedAt,
-			Body:      item.Body,
-			UserID:    item.UserID,
-		}
-		cleanedChirps = append(cleanedChirps, cleanedChirp)
+		cleanedChirps = append(cleanedChirps, cleanChirp(item))
 	}
-	w.Header().Set("Content-Type", "application/json")
-	dat, err := json.Marshal(cleanedChirps)
+	respondWithJSON(w, http.StatusOK, cleanedChirps)
+}
+
+func (cfg *apiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("chirpID")
+	parsedUUID, err := uuid.Parse(idString) // Use uuid.Parse() for parsing
 	if err != nil {
-		log.Printf("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
+		respondWithError(w, http.StatusBadRequest, "Invalid UUID format", err)
 		return
 	}
-	w.WriteHeader(200)
-	w.Write(dat)
+	payload, err := cfg.DB.GetChirp(r.Context(), parsedUUID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Couldn't find chirp", err)
+		return
+	}
+	cleanedChirp := cleanChirp(payload)
+	respondWithJSON(w, http.StatusOK, cleanedChirp)
 }

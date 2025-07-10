@@ -12,3 +12,8 @@ RETURNING *;
 -- name: GetChirps :many
 SELECT * FROM chirps
 ORDER BY chirps.created_at asc;
+
+-- name: GetChirp :one
+SELECT * FROM chirps
+Where chirps.id = $1
+LIMIT 1;
