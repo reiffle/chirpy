@@ -1,14 +1,19 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/reiffle/chirpy/internal/auth"
+	"github.com/reiffle/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -19,7 +24,18 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := cfg.DB.CreateUser(r.Context(), params.Email)
+	hashWord, err := auth.HashPassword(params.Password)
+	if err != nil {
+		log.Printf("Error creating user: %s", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't encrypt password", err)
+		return
+	}
+
+	userParams := database.CreateUserParams{
+		Email:           params.Email,
+		HashedPasswords: sql.NullString{String: hashWord, Valid: true},
+	}
+	user, err := cfg.DB.CreateUser(r.Context(), userParams)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create user", err)
 		return
