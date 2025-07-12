@@ -7,11 +7,10 @@ package database
 
 import (
 	"context"
-	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, created_at, updated_at, email, hashed_passwords)
+INSERT INTO users (id, created_at, updated_at, email, hashed_password)
 VALUES (
     gen_random_uuid(),
     now(),
@@ -19,29 +18,29 @@ VALUES (
     $1,
     $2
 )
-RETURNING id, created_at, updated_at, email, hashed_passwords
+RETURNING id, created_at, updated_at, email, hashed_password
 `
 
 type CreateUserParams struct {
-	Email           string
-	HashedPasswords sql.NullString
+	Email          string
+	HashedPassword string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.HashedPasswords)
+	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.HashedPassword)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
-		&i.HashedPasswords,
+		&i.HashedPassword,
 	)
 	return i, err
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT id, created_at, updated_at, email, hashed_passwords FROM users
+SELECT id, created_at, updated_at, email, hashed_password FROM users
 WHERE users.email = $1
 `
 
@@ -53,7 +52,7 @@ func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, erro
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
-		&i.HashedPasswords,
+		&i.HashedPassword,
 	)
 	return i, err
 }

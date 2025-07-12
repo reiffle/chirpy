@@ -26,7 +26,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, "Username and Password do not match", err)
 		return
 	}
-	err = auth.CheckPassword(params.Password, full_user.HashedPasswords.String)
+	err = auth.CheckPassword(params.Password, full_user.HashedPassword)
 
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Username and Password do not match", err)

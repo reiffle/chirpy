@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -32,9 +31,10 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	userParams := database.CreateUserParams{
-		Email:           params.Email,
-		HashedPasswords: sql.NullString{String: hashWord, Valid: true},
+		Email:          params.Email,
+		HashedPassword: hashWord,
 	}
+
 	user, err := cfg.DB.CreateUser(r.Context(), userParams)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create user", err)
