@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/reiffle/chirpy/internal/auth"
 	"github.com/reiffle/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body    string    `json:"body"`
-		User_id uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 	type returnVals struct {
 		ID        uuid.UUID `json:"id"`
@@ -24,11 +24,25 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 		UserID    uuid.UUID `json:"user_id"`
 	}
 
+	secret := cfg.secret
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		return
+	}
+
+	decoded_token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token in make", err)
+		return
+	}
+
+	uid, err := auth.ValidateJWT(decoded_token, secret)
+
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token in auth", err)
 		return
 	}
 
@@ -47,7 +61,7 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 
 	chirp_params := database.CreateChirpParams{
 		Body:   body,
-		UserID: params.User_id,
+		UserID: uid,
 	}
 	new_chirp, err := cfg.DB.CreateChirp(context.Background(), chirp_params)
 	if err != nil {

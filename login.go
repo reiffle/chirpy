@@ -3,14 +3,16 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/reiffle/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email    string
-		Password string
+		Email              string
+		Password           string
+		Expires_in_seconds int
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -33,11 +35,24 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if params.Expires_in_seconds < 1 || params.Expires_in_seconds > 3600 {
+		params.Expires_in_seconds = 3600
+	}
+
+	duration := time.Duration(params.Expires_in_seconds) * time.Second
+
+	token, err := auth.MakeJWT(full_user.ID, cfg.secret, duration)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not create tokane", err)
+		return
+	}
+
 	user := User{
 		ID:        full_user.ID,
 		CreatedAt: full_user.CreatedAt,
 		UpdatedAt: full_user.UpdatedAt,
 		Email:     full_user.Email,
+		Token:     token,
 	}
 	respondWithJSON(w, http.StatusOK, user)
 }

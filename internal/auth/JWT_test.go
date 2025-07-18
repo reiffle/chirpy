@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -45,5 +46,25 @@ func TestValidateJWTWrongPassword(t *testing.T) {
 	_, err = ValidateJWT(NewJWT, token+"s")
 	if err == nil {
 		t.Errorf("Wrong Password Allowed Access: %v", err)
+	}
+}
+
+func TestGetBearerToken(t *testing.T) {
+	pwd := "Bearer this is a password"
+	pwd2 := "this is a password"
+	req, err := http.NewRequest("GET", "http://example.com", nil)
+	if err != nil {
+		t.Errorf("Error creating request: %v", err)
+		return
+	}
+
+	// Set a single header
+	req.Header.Set("Authorization", pwd)
+	result, err := GetBearerToken(req.Header)
+	if err != nil {
+		t.Errorf("Couldn't get token: %v", err)
+	}
+	if result != pwd2 {
+		t.Error("Token and password do not match")
 	}
 }

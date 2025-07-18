@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -24,7 +27,6 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 	secretKey := []byte(tokenSecret) // Use a strong, secure key
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
-		fmt.Println("Error signing token:", err)
 		return "", err
 	}
 
@@ -52,15 +54,22 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	if token.Valid {
 		newUUID, err := uuid.Parse(claims.Subject)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("Invalid user ID: %w", err)
+			return uuid.Nil, fmt.Errorf("invalid user ID: %w", err)
 		}
-		// Access your custom claims
-		fmt.Printf("Subject claim: %s\n", claims.Subject)
-		// Access registered claims
-		fmt.Printf("Expiration time: %v\n", claims.ExpiresAt)
 		return newUUID, nil
 	} else {
-		fmt.Println("Invalid token")
 		return uuid.Nil, err
 	}
+}
+
+func GetBearerToken(headers http.Header) (string, error) {
+	auth := headers.Get("Authorization")
+	if auth == "" {
+		return "", errors.New("no authorization key found")
+	}
+	authslice := strings.SplitN(auth, " ", 2)
+	if len(authslice) != 2 {
+		return "", errors.New("invalid authorization")
+	}
+	return authslice[1], nil
 }
