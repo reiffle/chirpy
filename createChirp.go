@@ -16,6 +16,7 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 	type parameters struct {
 		Body string `json:"body"`
 	}
+
 	type returnVals struct {
 		ID        uuid.UUID `json:"id"`
 		CreatedAt time.Time `json:"created_at"`

@@ -3,7 +3,6 @@ package auth
 import (
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -11,8 +10,7 @@ import (
 func TestMakeJWTCorrectly(t *testing.T) {
 	user := uuid.New()
 	token := "MyPassword"
-	duration := time.Minute
-	_, err := MakeJWT(user, token, duration)
+	_, err := MakeJWT(user, token)
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
@@ -21,8 +19,7 @@ func TestMakeJWTCorrectly(t *testing.T) {
 func TestValidateJWT(t *testing.T) {
 	user := uuid.New()
 	token := "MyPassword"
-	duration := time.Minute
-	NewJWT, err := MakeJWT(user, token, duration)
+	NewJWT, err := MakeJWT(user, token)
 	if err != nil {
 		t.Errorf("Couldn't make JWT: %v", err)
 	}
@@ -38,8 +35,7 @@ func TestValidateJWT(t *testing.T) {
 func TestValidateJWTWrongPassword(t *testing.T) {
 	user := uuid.New()
 	token := "MyPassword"
-	duration := time.Minute
-	NewJWT, err := MakeJWT(user, token, duration)
+	NewJWT, err := MakeJWT(user, token)
 	if err != nil {
 		t.Errorf("Couldn't make JWT: %v", err)
 	}

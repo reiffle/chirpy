@@ -3,16 +3,15 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/reiffle/chirpy/internal/auth"
+	"github.com/reiffle/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email              string
-		Password           string
-		Expires_in_seconds int
+		Email    string
+		Password string
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -35,24 +34,30 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if params.Expires_in_seconds < 1 || params.Expires_in_seconds > 3600 {
-		params.Expires_in_seconds = 3600
-	}
-
-	duration := time.Duration(params.Expires_in_seconds) * time.Second
-
-	token, err := auth.MakeJWT(full_user.ID, cfg.secret, duration)
+	token, err := auth.MakeJWT(full_user.ID, cfg.secret)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not create tokane", err)
+		respondWithError(w, http.StatusInternalServerError, "Could not create tokan", err)
 		return
 	}
 
-	user := User{
-		ID:        full_user.ID,
-		CreatedAt: full_user.CreatedAt,
-		UpdatedAt: full_user.UpdatedAt,
-		Email:     full_user.Email,
-		Token:     token,
+	refreshTokenString, err := auth.MakeRefreshToken()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh token string", err)
 	}
+
+	tokenParams := database.CreateRefreshTokenParams{Token: refreshTokenString, UserID: full_user.ID}
+	refresh_token, err := cfg.DB.CreateRefreshToken(r.Context(), tokenParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh token string", err)
+	}
+	user := User{
+		ID:           full_user.ID,
+		CreatedAt:    full_user.CreatedAt,
+		UpdatedAt:    full_user.UpdatedAt,
+		Email:        full_user.Email,
+		Token:        token,
+		RefreshToken: refresh_token.Token,
+	}
+
 	respondWithJSON(w, http.StatusOK, user)
 }
