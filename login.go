@@ -43,12 +43,14 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	refreshTokenString, err := auth.MakeRefreshToken()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh token string", err)
+		return
 	}
 
 	tokenParams := database.CreateRefreshTokenParams{Token: refreshTokenString, UserID: full_user.ID}
 	refresh_token, err := cfg.DB.CreateRefreshToken(r.Context(), tokenParams)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh token string", err)
+		return
 	}
 	user := User{
 		ID:           full_user.ID,
