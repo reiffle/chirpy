@@ -13,13 +13,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type apiConfig struct {
-	fileserverHits atomic.Int32
-	DB             *database.Queries
-	platform       string
-	secret         string
-}
-
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -29,6 +22,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	secret := os.Getenv("SECRET")
+	polka_key := os.Getenv("POLKA_KEY")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -43,14 +37,13 @@ func main() {
 		DB:             dbQueries,
 		platform:       platform,
 		secret:         secret,
+		polka_key:      polka_key,
 	}
 
 	mux := http.NewServeMux()
 	fsHandler := apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
 	mux.Handle("/app/", fsHandler)
-
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
-
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)

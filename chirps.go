@@ -86,6 +86,7 @@ func getCleanedBody(body string, badWords map[string]struct{}) string {
 	return cleaned
 }
 
+/*
 func cleanMessage(message string) string {
 	const replaceWord = "****"
 	naughtyWords := []string{"kerfuffle", "sharbert", "fornax"}
@@ -99,6 +100,7 @@ func cleanMessage(message string) string {
 	}
 	return strings.Join(splitMessage, " ")
 }
+*/
 
 // Delete chirps
 func (cfg *apiConfig) handlerDeleteChirp(w http.ResponseWriter, r *http.Request) {

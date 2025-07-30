@@ -1,12 +1,22 @@
 package main
 
 import (
-	"github.com/reiffle/chirpy/internal/database"
-
+	"sync/atomic"
 	"time"
+
+	"github.com/reiffle/chirpy/internal/database"
 
 	"github.com/google/uuid"
 )
+
+// Api config
+type apiConfig struct {
+	fileserverHits atomic.Int32
+	DB             *database.Queries
+	platform       string
+	secret         string
+	polka_key      string
+}
 
 // User structs
 type User struct {

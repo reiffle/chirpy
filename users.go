@@ -5,9 +5,20 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/reiffle/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerIsChirpyRed(w http.ResponseWriter, r *http.Request) {
+	sentAuth, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't retrieve authorization key", err)
+		return
+	}
+	actualAuth := cfg.polka_key
+	if sentAuth != actualAuth {
+		respondWithError(w, http.StatusUnauthorized, "Not Authorized", err)
+		return
+	}
 	type userID struct {
 		UserID string `json:"user_id"`
 	}
@@ -18,7 +29,7 @@ func (cfg *apiConfig) handlerIsChirpyRed(w http.ResponseWriter, r *http.Request)
 
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
