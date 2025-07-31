@@ -153,15 +153,31 @@ func (cfg *apiConfig) handlerDeleteChirp(w http.ResponseWriter, r *http.Request)
 
 // Get chirps
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
-	payload, err := cfg.DB.GetChirps(r.Context())
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
-		return
-	}
-
+	s := r.URL.Query().Get("author_id")
 	var cleanedChirps []returnVals
-	for _, item := range payload {
-		cleanedChirps = append(cleanedChirps, cleanChirp(item))
+	if s == "" {
+		payload, err := cfg.DB.GetChirps(r.Context(), uuid.Nil)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
+			return
+		}
+		for _, item := range payload {
+			cleanedChirps = append(cleanedChirps, cleanChirp(item))
+		}
+	} else {
+		id, err := uuid.Parse(s)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Invalid uuid", err)
+			return
+		}
+		payload, err := cfg.DB.GetChirps(r.Context(), id)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
+			return
+		}
+		for _, item := range payload {
+			cleanedChirps = append(cleanedChirps, cleanChirp(item))
+		}
 	}
 	respondWithJSON(w, http.StatusOK, cleanedChirps)
 }
