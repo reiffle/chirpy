@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -153,10 +154,15 @@ func (cfg *apiConfig) handlerDeleteChirp(w http.ResponseWriter, r *http.Request)
 
 // Get chirps
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
-	s := r.URL.Query().Get("author_id")
+	s := r.URL.Query().Get("author_id") //optional
+	srt := r.URL.Query().Get("sort")    //optional - should be asc or desc if specified
+	if srt != "asc" && srt != "desc" && srt != "" {
+		respondWithError(w, http.StatusInternalServerError, "Invalid", errors.New("Sort order must be 'asc', 'desc' or blank"))
+		return
+	}
 	var cleanedChirps []returnVals
 	if s == "" {
-		payload, err := cfg.DB.GetChirps(r.Context(), uuid.Nil)
+		payload, err := cfg.DB.GetChirps(r.Context())
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
 			return
@@ -170,7 +176,7 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusInternalServerError, "Invalid uuid", err)
 			return
 		}
-		payload, err := cfg.DB.GetChirps(r.Context(), id)
+		payload, err := cfg.DB.GetChirpsByID(r.Context(), id)
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
 			return
@@ -178,6 +184,11 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 		for _, item := range payload {
 			cleanedChirps = append(cleanedChirps, cleanChirp(item))
 		}
+	}
+	if srt == "desc" {
+		sort.Slice(cleanedChirps, func(i, j int) bool {
+			return cleanedChirps[i].CreatedAt.After(cleanedChirps[j].CreatedAt)
+		})
 	}
 	respondWithJSON(w, http.StatusOK, cleanedChirps)
 }
